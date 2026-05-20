@@ -1,12 +1,21 @@
 import express from "express";
 import authRouter from "./routes/auth.routes.js";
+import quoteRouter from './routes/quote.routes.js'
+import adminRouter from './routes/admin.routes.js'
 import errorHandler from "./middlewares/error.middleware.js";
+import cookieParser from "cookie-parser";
+import roleMiddleware from "./middlewares/role.middleware.js";
+import { authMiddleware } from "./middlewares/auth.middleware.js";
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser())
 
 app.use("/api/auth", authRouter);
+app.use('/api/quotes',quoteRouter)
+app.use('/api/admin',authMiddleware,roleMiddleware("admin"),adminRouter)
+
 
 app.use(errorHandler) 
 
