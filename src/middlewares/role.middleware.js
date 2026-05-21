@@ -2,8 +2,12 @@ import ApiError from "../utils/ApiError.js";
 
 const roleMiddleware = (...allowedRoles) => {
   return (req, res, next) => {
-    const role = req.user.role;
 
+    if(!req.user){
+      throw new ApiError(401,"Unauthorized request")
+    }
+    
+    const role = req.user.role;
     if (!role) {
       throw new ApiError(401, "Unauthorized request");
     }

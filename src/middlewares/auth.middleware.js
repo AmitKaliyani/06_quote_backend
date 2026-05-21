@@ -16,7 +16,7 @@ export const authMiddleware = async (req, res, next) => {
     const user = await User.findById(decoded.id).select("-password");
 
     if (!user) {
-      throw new ApiError(401, "User not found");
+      throw new ApiError(404, "User not found");
     }
 
     req.user = user;
