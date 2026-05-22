@@ -1,15 +1,10 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
-import jwt from 'jsonwebtoken'
+import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 
-const userSchema = new Schema(
+const adminSchema = new Schema(
   {
-    name: {
-      type: String,
-      required: [true, "user name is required"],
-      trim: true,
-    },
     email: {
       type: String,
       required: [true, "email is required"],
@@ -21,14 +16,7 @@ const userSchema = new Schema(
       type: String,
       required: [true, "password is required"],
     },
-    role: {
-      type: String,
-      enum: {
-        values: ["user", "admin"],
-        message: "The role should be either user or admin ",
-      },
-      default: "user",
-    },
+
     refreshToken: {
       type: String,
     },
@@ -36,12 +24,12 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-userSchema.pre("save", async function () {
+adminSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 12);
 });
 
-userSchema.methods.generateAccessToken = function () {
+adminSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     { id: this._id, email: this.email, role: this.role },
     env.JWT_SECRET,
@@ -49,12 +37,12 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
-userSchema.methods.generateRefreshToken = function () {
+adminSchema.methods.generateRefreshToken = function () {
   return jwt.sign({ id: this._id }, env.JWT_REFRESH_SECRET, {
     expiresIn: "7d",
   });
 };
 
-const User = mongoose.model("user", userSchema);
+const Admin = mongoose.model("admin", adminSchema);
 
-export default User;
+export default Admin;

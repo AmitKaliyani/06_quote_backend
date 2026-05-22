@@ -4,8 +4,7 @@ import quoteRouter from "./routes/quote.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import errorHandler from "./middlewares/error.middleware.js";
 import cookieParser from "cookie-parser";
-import roleMiddleware from "./middlewares/role.middleware.js";
-import { authMiddleware } from "./middlewares/auth.middleware.js";
+
 const app = express();
 
 app.use(express.json());

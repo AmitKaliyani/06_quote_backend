@@ -40,7 +40,6 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findOne({ email });
-console.log(user);
 
   if (!user) {
     throw new ApiError(404, "User not found");
@@ -52,16 +51,13 @@ console.log(user);
     throw new ApiError(400, "Invalid credentials");
   }
 
-  const accessToken = jwt.sign(
-    { id: user._id, email: user.email, role: user.role },
-    env.JWT_SECRET,
-    { expiresIn: "15m" }
-  );
+  const accessToken = user.generateAccessToken()
+  console.log(accessToken);
+  
 
-  const refreshToken = jwt.sign({ id: user._id }, env.JWT_REFRESH_SECRET, {
-    expiresIn: "7d",
-  });
-
+  const refreshToken = user.generateRefreshToken()
+  
+  
   user.refreshToken = refreshToken;
 
   await user.save();
