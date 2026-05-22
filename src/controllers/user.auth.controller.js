@@ -5,6 +5,15 @@ import asyncHandler from "../utils/asynHandler.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
+import crypto from "crypto";
+import UserSession from "../models/user.sessions.model.js";
+import * as userModel from "../models/user.model.js";
+import * as userSessionModel from "../models/user.sessions.model.js";
+import {
+  generateRefreshToken,
+  generateHashedToken,
+} from "../services/generateRefreshToken.js";
+import { setCookie } from "../services/setCookie.js";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -13,19 +22,17 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-  const user = await User.findOne({ email });
+  const user = await userModel.getUser({ email });
 
   if (user) {
     throw new ApiError(409, "User already exists");
   }
 
-  const createdUser = await User.create({
+  const createdUser = await userModel.createUser({
     name,
     email,
     password,
   });
-
-  createdUser.password = undefined;
 
   return res
     .status(201)
@@ -39,94 +46,123 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid credentials");
   }
 
-  const user = await User.findOne({ email });
+  const user = await userModel.getUser({ email });
 
   if (!user) {
     throw new ApiError(404, "User not found");
   }
 
-  const isPasswordMatch = await bcrypt.compare(password, user.password);
+  const isPasswordMatch = await user.comparePassword(password);
 
   if (!isPasswordMatch) {
     throw new ApiError(400, "Invalid credentials");
   }
 
-  const accessToken = user.generateAccessToken()
-  console.log(accessToken);
-  
+  const accessToken = user.generateAccessToken();
 
-  const refreshToken = user.generateRefreshToken()
-  
-  
-  user.refreshToken = refreshToken;
+  const refreshToken = generateRefreshToken();
+  const hashedToken = generateHashedToken(refreshToken);
 
-  await user.save();
+  const session = await userSessionModel.createSession({
+    userId: user._id,
+    refreshToken: hashedToken,
+    ip: req.headers["x-forwarded-for"] || req.ip,
+    deviceInfo: req.headers["user-agent"],
+    isActive: true,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
 
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: true,
+  setCookie({
+    res,
+    name: "accessToken",
+    value: accessToken,
     maxAge: 15 * 60 * 1000,
   });
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: true,
+  setCookie({
+    res,
+    name: "refreshToken",
+    value: refreshToken,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, "User loggedIn successfully", {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      })
-    );
+  return res.status(200).json(
+    new ApiResponse(200, "User loggedIn successfully", {
+      id: user._id,
+      email: user.email,
+    })
+  );
 });
 
-const refresh = asyncHandler( async (req,res) => {
- 
-    const incomingToken  = req.cookies.refreshToken
+const refresh = asyncHandler(async (req, res) => {
+  const incomingToken = req.cookies.refreshToken;
 
-    if(!incomingToken){
-        throw new ApiError(401, 'No refresh token')
-    }
+  if (!incomingToken) {
+    throw new ApiError(401, "No refresh token");
+  }
 
-    const decoded = jwt.verify(incomingToken,env.JWT_REFRESH_SECRET)
+  const hashedIncomingToken = generateHashedToken(incomingToken);
 
-    const user = await User.findById(decoded.id)
+  const session = await userSessionModel.getValidSession(hashedIncomingToken);
 
-    if(!user || user.refreshToken !== incomingToken){
-        throw new ApiError(401,"Invalid refresh token")
-    }
+  if (!session) {
+    throw new ApiError(401, "Invalid refresh token");
+  }
 
-    const newAccessToken = jwt.sign({id:user._id,email:user.email,role:user.role},env.JWT_SECRET,{expiresIn:'15m'})
+  const user = await userModel.getUser({userId:session.userId});
 
-    res.cookie("accessToken",newAccessToken,{
-        httpOnly:true,
-        secure:true,
-        maxAge: 15 * 60 * 1000,
-    })
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
-    return res.status(200).json(new ApiResponse(200,"Access token refreshed"))
+  const token = user.generateAccessToken();
 
-})
+  const newRefreshToken = generateRefreshToken();
 
-const logoutUser = asyncHandler(async (req,res) => {
+  const newHashedRefreshToken = generateHashedToken(newRefreshToken);
 
-    const id = req.user._id
+  session.refreshToken = newHashedRefreshToken;
+  session.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await session.save();
 
-    await User.findByIdAndUpdate(id,{
-        $unset:{refreshToken:1}
-    })
+  setCookie({res,name:"refreshToken", value:newRefreshToken, maxAge: 7 * 24 * 60 * 60 * 1000,});
 
-    res.clearCookie("accessToken")
-    res.clearCookie("refreshToken")
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "New accessToken generated", token));
+});
 
+const logoutUser = asyncHandler(async (req, res) => {
+  const incomingRefreshToken = req.cookies.refreshToken;
 
-    return res.status(200).json(new ApiResponse(200,"User logged out successfully"))
-})
+  if (!incomingRefreshToken) {
+    throw new ApiError(400, "No refreshToken found");
+  }
+
+  const hashedIncomingToken = crypto
+    .createHash("sha256")
+    .update(incomingRefreshToken)
+    .digest("hex");
+
+  const session = await userSessionModel.getSession({
+    refreshToken: hashedIncomingToken,
+    isActive: true,
+  });
+
+  if (!session) {
+    throw new ApiError(404, "No session found");
+  }
+
+  session.isActive = false;
+  await session.save();
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: true,
+  });
+
+  return res.status(200).json(new ApiResponse(200, "Logged out successfully"));
+});
 
 const controller = {
   registerUser,

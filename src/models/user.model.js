@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
-import jwt from 'jsonwebtoken'
+import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 
 const userSchema = new Schema(
@@ -21,17 +21,6 @@ const userSchema = new Schema(
       type: String,
       required: [true, "password is required"],
     },
-    role: {
-      type: String,
-      enum: {
-        values: ["user", "admin"],
-        message: "The role should be either user or admin ",
-      },
-      default: "user",
-    },
-    refreshToken: {
-      type: String,
-    },
   },
   { timestamps: true }
 );
@@ -42,19 +31,36 @@ userSchema.pre("save", async function () {
 });
 
 userSchema.methods.generateAccessToken = function () {
-  return jwt.sign(
-    { id: this._id, email: this.email, role: this.role },
-    env.JWT_SECRET,
-    { expiresIn: "15m" }
-  );
-};
-
-userSchema.methods.generateRefreshToken = function () {
-  return jwt.sign({ id: this._id }, env.JWT_REFRESH_SECRET, {
-    expiresIn: "7d",
+  return jwt.sign({ id: this._id, email: this.email }, env.JWT_SECRET, {
+    expiresIn: "15m",
   });
 };
 
-const User = mongoose.model("user", userSchema);
+userSchema.methods.comparePassword = async function (password) {
+  return await bcrypt.compare(password, this.password);
+};
+
+const User = mongoose.model("User", userSchema);
 
 export default User;
+
+export const getUser = async ({email,userId}) => {
+
+  let filter = {}
+
+  if(email){
+    filter.email = email
+  }
+  if(userId){
+     filter['_id'] = userId;
+  }
+  return await User.findOne(filter);
+};
+
+
+export const createUser = async(userData) => {
+  const user =  await User.create(userData)
+  user.password = undefined;
+
+  return user
+}

@@ -5,8 +5,9 @@ import jwt from "jsonwebtoken";
 
 export const userAuthMiddleware = async (req, res, next) => {
   try {
-    const token = req.cookies.accessToken;
-
+  
+    const token = req.headers['authorization'].split(' ')[1]
+ 
     if (!token) {
       throw new ApiError(401, "User not found");
     }
