@@ -31,18 +31,39 @@ adminSchema.pre("save", async function () {
 
 adminSchema.methods.generateAccessToken = function () {
   return jwt.sign(
-    { id: this._id, email: this.email, role: this.role },
+    { id: this._id, email: this.email },
     env.JWT_SECRET,
     { expiresIn: "15m" }
   );
 };
 
-adminSchema.methods.generateRefreshToken = function () {
-  return jwt.sign({ id: this._id }, env.JWT_REFRESH_SECRET, {
-    expiresIn: "7d",
-  });
+
+adminSchema.methods.comparePassword = async function (password) {
+  return await bcrypt.compare(password, this.password);
 };
 
-const Admin = mongoose.model("admin", adminSchema);
+
+// adminSchema.methods.generateRefreshToken = function () {
+//   return jwt.sign({ id: this._id }, env.JWT_REFRESH_SECRET, {
+//     expiresIn: "7d",
+//   });
+// };
+
+
+
+const Admin = mongoose.model("Admin", adminSchema);
 
 export default Admin;
+
+export const getAdmin = async ({email,userId}) => {
+  if (!email && !userId) return null;
+  let filter = {}
+
+  if(email){
+    filter.email = email
+  }
+  if(userId){
+     filter['_id'] = userId;
+  }
+  return await Admin.findOne(filter);
+};

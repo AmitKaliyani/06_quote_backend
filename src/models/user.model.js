@@ -45,7 +45,7 @@ const User = mongoose.model("User", userSchema);
 export default User;
 
 export const getUser = async ({email,userId}) => {
-
+  if (!email && !userId) return null;
   let filter = {}
 
   if(email){

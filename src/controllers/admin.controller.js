@@ -35,7 +35,6 @@ const approveQuote = asyncHandler(async (req, res) => {
 });
 
 const rejectQuote = asyncHandler(async (req, res) => {
-
   const quote = await quoteModel.updateQuoteById({
     filter: { _id: req.params.id },
     updateData: { status: "rejected", rejectedAt: Date.now() },
@@ -58,7 +57,7 @@ const rejectQuote = asyncHandler(async (req, res) => {
 const deleteQuote = asyncHandler(async (req, res) => {
   const id = req.params.id;
 
-  const quote = await quoteModel.deleteQuoteById({_id:id});
+  const quote = await quoteModel.deleteQuoteById({ _id: id });
 
   if (!quote) {
     throw new ApiError(404, "Quote not found");
@@ -69,73 +68,10 @@ const deleteQuote = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Quote deleted successfully"));
 });
 
-// const getAllUsers = asyncHandler(async (req, res) => {});
-
-const adminLogin = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    throw new ApiError(400, "Both fields are required");
-  }
-
-  const admin = await User.findOne({ email });
-
-  if (!admin) {
-    throw new ApiError(404, "User not found");
-  }
-
-  const isPasswordMatch = await bcrypt.compare(password, admin.password);
-
-  if (!isPasswordMatch) {
-    throw new ApiError(401, "Invalid credentials");
-  }
-
-  if (admin.role !== "admin") {
-    throw new ApiError(403, "Access denied:Not admin");
-  }
-
-  const accessToken = jwt.sign(
-    { id: admin._id, email: admin.email, role: admin.role },
-    env.JWT_SECRET,
-    { expiresIn: "15m" }
-  );
-
-  const refreshToken = jwt.sign(
-    { id: admin._id, email: admin.email, role: admin.role },
-    env.JWT_REFRESH_SECRET,
-    { expiresIn: "7d" }
-  );
-
-  admin.refreshToken = refreshToken;
-
-  await admin.save();
-
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: true,
-    maxAge: 15 * 60 * 1000,
-  });
-
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-
-  return res.status(200).json(
-    new ApiResponse(200, "Admin loggedIn successfully", {
-      id: admin._id,
-      email: admin.email,
-      role: admin.role,
-    })
-  );
-});
-
 export default {
   getPendingQuotes,
   approveQuote,
   rejectQuote,
   deleteQuote,
-  adminLogin,
   //   getAllUsers,
 };

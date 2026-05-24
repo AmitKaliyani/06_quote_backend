@@ -1,10 +1,10 @@
 import mongoose, { Schema } from "mongoose";
 
-const userSessionSchema = new Schema(
+const adminSessionSchema = new Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Admin",
       required: true,
     },
     refreshToken: {
@@ -30,11 +30,11 @@ const userSessionSchema = new Schema(
   { timestamps: true }
 );
 
-const UserSession = mongoose.model("UserSession", userSessionSchema);
-export default UserSession;
+const AdminSession = mongoose.model("AdminSession",adminSessionSchema);
+export default AdminSession;
 
 export const getValidSession = async (token) => {
-  const session = await UserSession.findOne({
+  const session = await AdminSession.findOne({
     refreshToken: token,
     expiresAt: { $gt: new Date() },
     isActive: true,
@@ -43,7 +43,7 @@ export const getValidSession = async (token) => {
 };
 
 export const rotateRefreshToken = async (oldToken, newToken) => {
-  await UserSession.findOneAndUpdate(
+  await AdminSession.findOneAndUpdate(
     {
       refreshToken: oldToken,
       isActive: true,
@@ -60,7 +60,7 @@ export const rotateRefreshToken = async (oldToken, newToken) => {
 };
 
 export const revokeSession = async (token) => {
-  return await UserSession.findOneAndUpdate(
+  return await AdminSession.findOneAndUpdate(
     { refreshToken: token, isActive: true, expiresAt: { $gt: new Date() } },
     { isActive: false },
     { new: true, runValidators: true }
@@ -68,5 +68,5 @@ export const revokeSession = async (token) => {
 };
 
 export const createSession = async (sessionData) => {
-  return await UserSession.create(sessionData);
+  return await AdminSession.create(sessionData);
 };

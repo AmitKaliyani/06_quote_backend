@@ -1,10 +1,20 @@
 import { Router } from "express";
 import controller from "../controllers/admin.controller.js";
+import * as adminAuthController from "../controllers/admin.auth.controller.js";
 import { adminAuthMiddleware } from "../middlewares/admin.auth.middleware.js";
+import { validate } from "../middlewares/validate.middleware.js";
+import { loginUserSchema } from "../validators/loginAdminSchema.js";
 
 const router = Router();
 
-router.post("/login", controller.adminLogin);
+router.post(
+  "/login",
+  validate(loginUserSchema),
+  adminAuthController.adminLogin
+);
+router.post("/logout", adminAuthMiddleware, adminAuthController.adminLogin);
+router.post("/refresh", adminAuthController.refresh);
+
 router.get("/quotes", adminAuthMiddleware, controller.getPendingQuotes);
 router.patch(
   "/quotes/:id/approve",
