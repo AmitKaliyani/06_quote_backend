@@ -3,15 +3,29 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asynHandler.js";
 import * as quotesModel from "../models/quote.model.js";
+import { log } from "console";
 //  public controller
 
 const getQuotes = asyncHandler(async (req, res) => {
+  const {
+    page = req.query.page,
+    limit = req.query.limit,
+    search = req.query.search,
+    sort = req.query.sort,
+  } = req.query;
+
+  // console.log(req.query.search);
+
   const quotes = await quotesModel.getQuotes({
     status: "approved",
     populate: {
       path: "submittedBy",
       select: "-password -refreshToken",
     },
+    page,
+    limit,
+    search,
+    sort,
   });
 
   return res
@@ -20,11 +34,10 @@ const getQuotes = asyncHandler(async (req, res) => {
 });
 
 const getQuoteById = asyncHandler(async (req, res) => {
-  const quote = await quotesModel.getQuotes({
-    _id:req.params.id,
-   populate:{ path: "submittedBy",
-    select: "-password -refreshToken",}
-  })
+  const quote = await quotesModel.getQuoteById({
+    id: req.params.id,
+    populate: { path: "submittedBy", select: "-password -refreshToken" },
+  });
 
   return res
     .status(200)
@@ -59,26 +72,25 @@ const createQuote = asyncHandler(async (req, res) => {
 const getMyQuotes = asyncHandler(async (req, res) => {
   const id = req.user._id;
 
-  const quotes = await quotesModel.getQuotes({ submittedBy: id });
- 
+  const {quotes,pagination} = await quotesModel.getQuotes({ submittedBy: id });
+  console.log("GET MY QUOTES : ",quotes,pagination);
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "Quotes fetched successfully", quotes));
+    .json(new ApiResponse(200, "Quotes fetched successfully", quotes,true,{...pagination}));
 });
 
 const updateQuoteById = asyncHandler(async (req, res) => {
   const id = req.params.id;
 
-  const quote = await quotesModel.updateQuoteById({ 
-    filter:{ 
+  const quote = await quotesModel.updateQuoteById({
+    filter: {
       _id: id,
       submittedBy: req.user._id,
-      status:"pending-review"
+      status: "pending-review",
     },
-   updateData:{...req.body}
-  }
- )
+    updateData: { ...req.body },
+  });
 
   if (!quote) {
     throw new ApiError(404, "Quote not found");
@@ -91,7 +103,7 @@ const updateQuoteById = asyncHandler(async (req, res) => {
 
 const deleteQuoteById = asyncHandler(async (req, res) => {
   const id = req.params.id;
- 
+
   const quote = await quotesModel.deleteQuoteById({
     _id: id,
     submittedBy: req.user._id,

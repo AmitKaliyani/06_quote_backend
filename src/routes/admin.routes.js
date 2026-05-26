@@ -12,7 +12,7 @@ router.post(
   validate(loginUserSchema),
   adminAuthController.adminLogin
 );
-router.post("/logout", adminAuthMiddleware, adminAuthController.adminLogin);
+router.post("/logout", adminAuthMiddleware, adminAuthController.adminLogout);
 router.post("/refresh", adminAuthController.refresh);
 
 router.get("/quotes", adminAuthMiddleware, controller.getPendingQuotes);

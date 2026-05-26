@@ -1,4 +1,5 @@
 import mongoose, { Schema, trusted, Types } from "mongoose";
+import ApiError from "../utils/ApiError.js";
 
 const quotesSchema = new Schema(
   {
@@ -12,7 +13,7 @@ const quotesSchema = new Schema(
     },
     submittedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: "User",
       required: true,
     },
 
@@ -56,16 +57,20 @@ const Quote = mongoose.model("quote", quotesSchema);
 export default Quote;
 
 export const getQuotes = async ({
-  pageNo,
   submittedBy,
+  page = 1,
+  limit = 10,
+  search = "",
+  sort = "-createdAt",
   status,
-  populate,
   id,
+  populate,
 }) => {
+  // console.log({page,limit,search,sort,status,});
+
+  const skip = (page - 1) * limit;
+
   const filterParams = {};
-  if (pageNo !== undefined && pageNo !== null) {
-    filterParams.pageNo = pageNo;
-  }
 
   if (submittedBy) {
     filterParams.submittedBy = submittedBy;
@@ -79,13 +84,47 @@ export const getQuotes = async ({
     filterParams["_id"] = id;
   }
 
-  if (populate) {
-    const quotes = await Quote.find(filterParams).populate(populate);
-    return quotes;
-  } else {
-    const quotes = await Quote.find(filterParams);
-    return quotes;
+  if (search) {
+    filterParams.text = {
+      $regex: search,
+      $options: "i",
+    };
   }
+
+  let query = Quote.find(filterParams).sort(sort).skip(skip).limit(limit);
+
+  if (populate) {
+    query = query.populate(populate);
+  }
+
+  const quotes = await query;
+  // console.log("Inside Model : ",quotes,filterParams)
+  const total = await Quote.countDocuments(filterParams);
+  return {
+    quotes,
+    pagination: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+export const getQuoteById = async ({id, populate}) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(400, "Invalid Id");
+  }
+
+  let query = Quote.findById(id);
+
+  if (populate) {
+    query = query.populate(populate);
+  }
+
+  const quote = await query;
+
+  return quote;
 };
 
 export const createQuote = async (qouteData) => {
