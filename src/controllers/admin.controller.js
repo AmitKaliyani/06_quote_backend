@@ -44,11 +44,6 @@ const rejectQuote = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Quote not found");
   }
 
-  quote.status = "rejected";
-  quote.approvedAt = Date.now();
-
-  await quote.save();
-
   return res
     .status(200)
     .json(new ApiResponse(200, "Quote status update successfully", quote));

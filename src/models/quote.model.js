@@ -52,7 +52,7 @@ quotesSchema.index({ status: 1 });
 quotesSchema.index({ createdAt: -1 });
 quotesSchema.index({ status: 1, approvedAt: -1 });
 
-const Quote = mongoose.model("quote", quotesSchema);
+const Quote = mongoose.model("Quote", quotesSchema);
 
 export default Quote;
 
@@ -91,13 +91,73 @@ export const getQuotes = async ({
     };
   }
 
-  let query = Quote.find(filterParams).sort(sort).skip(skip).limit(limit);
+  // const pipeline = Quote.aggregate([
+  //   {
+  //     $lookup: {
+  //       from: "likes",
+  //       localField: "_id",
+  //       foreignField: "quoteId",
+  //       as: "likes",
+  //     },
+  //   },
+  //   {
+  //     $addFields: {
+  //       likeCount: { $size: "$likes" },
+  //     },
+  //   },
+  //   {
+  //     $project: {
+  //       likes: 0,
+  //     },
+  //   },
+  // ]);
 
-  if (populate) {
-    query = query.populate(populate);
-  }
+  // let query = Quote.find(filterParams)
 
-  const quotes = await query;
+  //   .sort(sort)
+  //   .skip(skip)
+  //   .limit(limit);
+
+  // if (populate) {
+  //   query = query.populate(populate);
+  // }
+  // const quotes = await query;
+
+  const quotes = await Quote.aggregate([
+    // 👇 YAHI JAYEGA (FIRST STEP)
+    { $match: filterParams },
+
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "quoteId",
+        as: "likes",
+      },
+    },
+
+    {
+      $addFields: {
+        likeCount: { $size: "$likes" },
+      },
+    },
+
+    {
+      $project: {
+        likes: 0,
+      },
+    },
+
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+
+    { $skip: skip },
+    { $limit: Number(limit) },
+  ]);
+
   // console.log("Inside Model : ",quotes,filterParams)
   const total = await Quote.countDocuments(filterParams);
   return {
@@ -111,7 +171,7 @@ export const getQuotes = async ({
   };
 };
 
-export const getQuoteById = async ({id, populate}) => {
+export const getQuoteById = async ({ id, populate }) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError(400, "Invalid Id");
   }

@@ -86,7 +86,6 @@ const refresh = asyncHandler(async (req, res) => {
   }
 
   const admin = await adminModel.getAdmin({ userId: session.userId });
-  2;
   if (!admin) {
     throw new ApiError(404, "Admin not found");
   }

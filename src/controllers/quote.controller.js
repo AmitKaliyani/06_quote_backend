@@ -3,7 +3,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asynHandler.js";
 import * as quotesModel from "../models/quote.model.js";
-import { log } from "console";
+
 //  public controller
 
 const getQuotes = asyncHandler(async (req, res) => {
@@ -72,12 +72,18 @@ const createQuote = asyncHandler(async (req, res) => {
 const getMyQuotes = asyncHandler(async (req, res) => {
   const id = req.user._id;
 
-  const {quotes,pagination} = await quotesModel.getQuotes({ submittedBy: id });
-  console.log("GET MY QUOTES : ",quotes,pagination);
+  const { quotes, pagination } = await quotesModel.getQuotes({
+    submittedBy: id,
+  });
+  // console.log("GET MY QUOTES : ",quotes,pagination);
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "Quotes fetched successfully", quotes,true,{...pagination}));
+    .json(
+      new ApiResponse(200, "Quotes fetched successfully", quotes, true, {
+        ...pagination,
+      })
+    );
 });
 
 const updateQuoteById = asyncHandler(async (req, res) => {
@@ -118,6 +124,46 @@ const deleteQuoteById = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, "Quote deleted successfully"));
 });
+
+export const getTrendingQuote = asyncHandler(async (req, res) => {
+  const quotes = await Quote.aggregate([
+    {
+      $match:{
+        status:"approved"
+      }
+    }
+    ,
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "quoteId",
+        as: "likes",
+      },
+    },
+    {
+      $addFields: {
+        likeCount: { $size: "$likes" },
+      },
+    },
+
+    {
+      $project: {
+        likes: 0,
+      },
+    },
+
+    {
+   $sort:{likeCount:-1}
+    },
+    {
+      $limit:3
+    }
+  ]);
+
+  return res.status(200).json(new ApiResponse(200,"Trending quotes fetched successfully",quotes))
+});
+
 export default {
   createQuote,
   getMyQuotes,
@@ -125,4 +171,5 @@ export default {
   getQuoteById,
   updateQuoteById,
   deleteQuoteById,
+  getTrendingQuote,
 };

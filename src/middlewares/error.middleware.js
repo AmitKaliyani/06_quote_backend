@@ -6,7 +6,7 @@ const errorHandler = (err,req,res,next) => {
         success:false,
         message:err.message || "Internal Server error",
         errors:err.errors || [], 
-        stack: process.env.NODE_ENV === "devlopment" ? err.stack : undefined
+        stack: process.env.NODE_ENV === "development" ? err.stack : undefined
 
     })
 }
