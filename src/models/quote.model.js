@@ -8,7 +8,7 @@ const quotesSchema = new Schema(
       maxlength: 500,
       required: [true, "text is required"],
     },
-    attributedTo: {
+    author: {
       type: String,
     },
     submittedBy: {
@@ -34,13 +34,32 @@ const quotesSchema = new Schema(
       type: Date,
     },
     tags: {
-      type: [{ type: String, lowercase: true, trim: true }],
+      type: [
+        {
+          type: String,
+          lowercase: true,
+          trim: true,
+          enum: {
+            values: [
+              "motivation",
+              "love",
+              "life",
+              "wealth",
+              "success",
+              "business",
+              "friendship",
+              "leadership",
+            ],
+            message: "Invalid Tags",
+          },
+        },
+      ],
       lowercase: true,
       validate: {
         validator: function (tags) {
-          return tags.length <= 5;
+          return tags.length <= 3;
         },
-        message: "Maximum 5 tags allowed",
+        message: "Maximum 3 tags allowed",
       },
     },
   },
@@ -65,6 +84,7 @@ export const getQuotes = async ({
   status,
   id,
   populate,
+  tags
 }) => {
   // console.log({page,limit,search,sort,status,});
 
@@ -78,6 +98,9 @@ export const getQuotes = async ({
 
   if (status) {
     filterParams.status = status;
+  }
+  if (tags) {
+    filterParams.tags = tags;
   }
 
   if (id) {
@@ -124,7 +147,6 @@ export const getQuotes = async ({
   // const quotes = await query;
 
   const quotes = await Quote.aggregate([
-    // 👇 YAHI JAYEGA (FIRST STEP)
     { $match: filterParams },
 
     {

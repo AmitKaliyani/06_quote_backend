@@ -12,6 +12,7 @@ const getQuotes = asyncHandler(async (req, res) => {
     limit = req.query.limit,
     search = req.query.search,
     sort = req.query.sort,
+    tags =  req.query.tag,
   } = req.query;
 
   // console.log(req.query.search);
@@ -26,6 +27,7 @@ const getQuotes = asyncHandler(async (req, res) => {
     limit,
     search,
     sort,
+    tags
   });
 
   return res
@@ -47,7 +49,7 @@ const getQuoteById = asyncHandler(async (req, res) => {
 //  users controller
 
 const createQuote = asyncHandler(async (req, res) => {
-  const { text, attributedTo, tags } = req.body;
+  const { text, author, tags } = req.body;
 
   if (!text || text.trim() === "") {
     throw new ApiError(400, "Text is required");
@@ -59,7 +61,7 @@ const createQuote = asyncHandler(async (req, res) => {
 
   const quote = await quotesModel.createQuote({
     text,
-    attributedTo,
+    author,
     tags,
     submittedBy: req.user._id,
   });
