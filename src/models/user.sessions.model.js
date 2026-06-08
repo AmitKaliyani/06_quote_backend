@@ -53,7 +53,7 @@ export const rotateRefreshToken = async (oldToken, newToken) => {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     }
   );
@@ -63,7 +63,7 @@ export const revokeSession = async (token) => {
   return await UserSession.findOneAndUpdate(
     { refreshToken: token, isActive: true, expiresAt: { $gt: new Date() } },
     { isActive: false },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 };
 

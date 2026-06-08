@@ -30,7 +30,7 @@ const adminSessionSchema = new Schema(
   { timestamps: true }
 );
 
-const AdminSession = mongoose.model("AdminSession",adminSessionSchema);
+const AdminSession = mongoose.model("AdminSession", adminSessionSchema);
 export default AdminSession;
 
 export const getValidSession = async (token) => {
@@ -53,7 +53,7 @@ export const rotateRefreshToken = async (oldToken, newToken) => {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     }
   );
@@ -63,7 +63,7 @@ export const revokeSession = async (token) => {
   return await AdminSession.findOneAndUpdate(
     { refreshToken: token, isActive: true, expiresAt: { $gt: new Date() } },
     { isActive: false },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 };
 

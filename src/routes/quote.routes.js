@@ -15,14 +15,14 @@ router.post(
   validate(quoteSchema),
   controller.createQuote
 );
-router.route("/trending-quotes").get(controller.getTrendingQuote)
+router.route("/trending-quotes").get(controller.getTrendingQuote);
 router.get("/me", userAuthMiddleware, controller.getMyQuotes);
 router
   .route("/:id")
   .get(controller.getQuoteById)
   .patch(userAuthMiddleware, controller.updateQuoteById)
-  .delete(userAuthMiddleware, controller.deleteQuoteById);  
+  .delete(userAuthMiddleware, controller.deleteQuoteById);
 
-  router.route("/like").post(userAuthMiddleware,toggleLike)
+router.route("/like").post(userAuthMiddleware, toggleLike);
 
 export default router;

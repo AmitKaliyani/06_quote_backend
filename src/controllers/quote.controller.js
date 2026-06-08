@@ -12,7 +12,7 @@ const getQuotes = asyncHandler(async (req, res) => {
     limit = req.query.limit,
     search = req.query.search,
     sort = req.query.sort,
-    tags =  req.query.tag,
+    tags = req.query.tag,
   } = req.query;
 
   // console.log(req.query.search);
@@ -27,7 +27,7 @@ const getQuotes = asyncHandler(async (req, res) => {
     limit,
     search,
     sort,
-    tags
+    tags,
   });
 
   return res
@@ -76,16 +76,15 @@ const getMyQuotes = asyncHandler(async (req, res) => {
 
   const { quotes, pagination } = await quotesModel.getQuotes({
     submittedBy: id,
+    page: Number(req.query.page) || 1,
+    limit: Number(req.query.limit) || 10,
   });
-  // console.log("GET MY QUOTES : ",quotes,pagination);
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, "Quotes fetched successfully", quotes, true, {
-        ...pagination,
-      })
-    );
+  return res.status(200).json(
+    new ApiResponse(200, "Quotes fetched successfully", quotes, true, {
+      ...pagination,
+    })
+  );
 });
 
 const updateQuoteById = asyncHandler(async (req, res) => {
@@ -130,11 +129,10 @@ const deleteQuoteById = asyncHandler(async (req, res) => {
 export const getTrendingQuote = asyncHandler(async (req, res) => {
   const quotes = await Quote.aggregate([
     {
-      $match:{
-        status:"approved"
-      }
-    }
-    ,
+      $match: {
+        status: "approved",
+      },
+    },
     {
       $lookup: {
         from: "likes",
@@ -156,14 +154,16 @@ export const getTrendingQuote = asyncHandler(async (req, res) => {
     },
 
     {
-   $sort:{likeCount:-1}
+      $sort: { likeCount: -1 },
     },
     {
-      $limit:3
-    }
+      $limit: 3,
+    },
   ]);
 
-  return res.status(200).json(new ApiResponse(200,"Trending quotes fetched successfully",quotes))
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Trending quotes fetched successfully", quotes));
 });
 
 export default {

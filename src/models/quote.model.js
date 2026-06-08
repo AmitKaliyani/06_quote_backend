@@ -84,7 +84,7 @@ export const getQuotes = async ({
   status,
   id,
   populate,
-  tags
+  tags,
 }) => {
   // console.log({page,limit,search,sort,status,});
 
@@ -113,6 +113,8 @@ export const getQuotes = async ({
       $options: "i",
     };
   }
+
+  // console.log(filterParams);
 
   // const pipeline = Quote.aggregate([
   //   {
