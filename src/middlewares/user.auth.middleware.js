@@ -5,9 +5,8 @@ import jwt from "jsonwebtoken";
 
 export const userAuthMiddleware = async (req, res, next) => {
   try {
-  
-    const token = req.cookies.accessToken
- 
+    const token = req.cookies.accessToken;
+
     if (!token) {
       throw new ApiError(401, "User not found");
     }
@@ -22,8 +21,29 @@ export const userAuthMiddleware = async (req, res, next) => {
 
     req.user = user;
 
+    // console.log(user);
+
     next();
   } catch (error) {
     throw new ApiError(401, "Invalid or expire token");
+  }
+};
+
+export const userAuthMiddlewareOptional = (req, res, next) => {
+  try {
+    const token = req.cookies.accessToken;
+
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+
+    next();
+  } catch (err) {
+    req.user = null;
+    next();
   }
 };

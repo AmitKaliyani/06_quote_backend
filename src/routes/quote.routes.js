@@ -1,13 +1,17 @@
 import { Router } from "express";
-import { userAuthMiddleware } from "../middlewares/user.auth.middleware.js";
+import {
+  userAuthMiddleware,
+  userAuthMiddlewareOptional,
+} from "../middlewares/user.auth.middleware.js";
 import controller from "../controllers/quote.controller.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { quoteSchema } from "../validators/quoteSchema.js";
 import { toggleLike } from "../controllers/like.controller.js";
+import { toggleSave } from "../controllers/save.controller.js";
 
 const router = Router();
 
-router.get("/", controller.getQuotes);
+router.get("/", userAuthMiddlewareOptional, controller.getQuotes);
 
 router.post(
   "/",
@@ -19,10 +23,11 @@ router.route("/trending-quotes").get(controller.getTrendingQuote);
 router.get("/me", userAuthMiddleware, controller.getMyQuotes);
 router
   .route("/:id")
-  .get(controller.getQuoteById)
+  .get(userAuthMiddlewareOptional, controller.getQuoteById)
   .patch(userAuthMiddleware, controller.updateQuoteById)
   .delete(userAuthMiddleware, controller.deleteQuoteById);
 
-router.route("/like").post(userAuthMiddleware, toggleLike);
+router.route("/:id/like").post(userAuthMiddleware, toggleLike);
+router.route("/:id/save").post(userAuthMiddleware, toggleSave);
 
 export default router;

@@ -85,16 +85,20 @@ export const getQuotes = async ({
   id,
   populate,
   tags,
+  userId = null,
 }) => {
   // console.log({page,limit,search,sort,status,});
+
+  // console.log(userId);
 
   const skip = (page - 1) * limit;
 
   const filterParams = {};
 
   if (submittedBy) {
-    filterParams.submittedBy = submittedBy;
+    filterParams.submittedBy = new mongoose.Types.ObjectId(submittedBy);
   }
+  // console.log(submittedBy);
 
   if (status) {
     filterParams.status = status;
@@ -114,40 +118,6 @@ export const getQuotes = async ({
     };
   }
 
-  // console.log(filterParams);
-
-  // const pipeline = Quote.aggregate([
-  //   {
-  //     $lookup: {
-  //       from: "likes",
-  //       localField: "_id",
-  //       foreignField: "quoteId",
-  //       as: "likes",
-  //     },
-  //   },
-  //   {
-  //     $addFields: {
-  //       likeCount: { $size: "$likes" },
-  //     },
-  //   },
-  //   {
-  //     $project: {
-  //       likes: 0,
-  //     },
-  //   },
-  // ]);
-
-  // let query = Quote.find(filterParams)
-
-  //   .sort(sort)
-  //   .skip(skip)
-  //   .limit(limit);
-
-  // if (populate) {
-  //   query = query.populate(populate);
-  // }
-  // const quotes = await query;
-
   const quotes = await Quote.aggregate([
     { $match: filterParams },
 
@@ -159,16 +129,52 @@ export const getQuotes = async ({
         as: "likes",
       },
     },
+    {
+      $lookup: {
+        from: "saves",
+        localField: "_id",
+        foreignField: "quoteId",
+        as: "saved",
+      },
+    },
 
     {
       $addFields: {
         likeCount: { $size: "$likes" },
+        isLiked: userId
+          ? {
+              $anyElementTrue: {
+                $map: {
+                  input: "$likes",
+                  as: "l",
+                  in: {
+                    $eq: ["$$l.userId", new mongoose.Types.ObjectId(userId)],
+                  },
+                },
+              },
+            }
+          : false,
+
+        isSaved: userId
+          ? {
+              $anyElementTrue: {
+                $map: {
+                  input: "$saved",
+                  as: "s",
+                  in: {
+                    $eq: ["$$s.userId", new mongoose.Types.ObjectId(userId)],
+                  },
+                },
+              },
+            }
+          : false,
       },
     },
 
     {
       $project: {
         likes: 0,
+        saved: 0,
       },
     },
 
@@ -193,22 +199,93 @@ export const getQuotes = async ({
       totalPages: Math.ceil(total / limit),
     },
   };
+
+  console.log(quotes);
 };
 
-export const getQuoteById = async ({ id, populate }) => {
+export const getQuoteById = async ({ id, userId, populate }) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError(400, "Invalid Id");
   }
 
-  let query = Quote.findById(id);
+  let query = Quote.aggregate([
+    {
+      $match: { _id: new mongoose.Types.ObjectId(id) },
+    },
 
-  if (populate) {
-    query = query.populate(populate);
-  }
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "quoteId",
+        as: "likes",
+      },
+    },
+    {
+      $lookup: {
+        from: "saves",
+        localField: "_id",
+        foreignField: "quoteId",
+        as: "saved",
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "submittedBy",
+        foreignField: "_id",
+        as: "submittedBy",
+      },
+    },
+    {
+      $unwind: "$submittedBy",
+    },
+
+    {
+      $addFields: {
+        likeCount: { $size: "$likes" },
+        isLiked: userId
+          ? {
+              $anyElementTrue: {
+                $map: {
+                  input: "$likes",
+                  as: "l",
+                  in: {
+                    $eq: ["$$l.userId", new mongoose.Types.ObjectId(userId)],
+                  },
+                },
+              },
+            }
+          : false,
+        isSaved: userId
+          ? {
+              $anyElementTrue: {
+                $map: {
+                  input: "$saved",
+                  as: "s",
+                  in: {
+                    $eq: ["$$s.userId", new mongoose.Types.ObjectId(userId)],
+                  },
+                },
+              },
+            }
+          : false,
+      },
+    },
+
+    {
+      $project: {
+        likes: 0,
+        "submittedBy.password": 0,
+        "submittedBy.refreshToken": 0,
+        "submittedBy.__v": 0,
+      },
+    },
+  ]);
 
   const quote = await query;
 
-  return quote;
+  return quote[0] || null;
 };
 
 export const createQuote = async (qouteData) => {
