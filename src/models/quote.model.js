@@ -276,6 +276,7 @@ export const getQuoteById = async ({ id, userId, populate }) => {
     {
       $project: {
         likes: 0,
+        saved: 0,
         "submittedBy.password": 0,
         "submittedBy.refreshToken": 0,
         "submittedBy.__v": 0,

@@ -7,7 +7,7 @@ import controller from "../controllers/quote.controller.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { quoteSchema } from "../validators/quoteSchema.js";
 import { toggleLike } from "../controllers/like.controller.js";
-import { toggleSave } from "../controllers/save.controller.js";
+import { getSavedQuotes, toggleSave } from "../controllers/save.controller.js";
 
 const router = Router();
 
@@ -21,6 +21,7 @@ router.post(
 );
 router.route("/trending-quotes").get(controller.getTrendingQuote);
 router.get("/me", userAuthMiddleware, controller.getMyQuotes);
+router.route("/saved").get(userAuthMiddleware, getSavedQuotes);
 router
   .route("/:id")
   .get(userAuthMiddlewareOptional, controller.getQuoteById)
