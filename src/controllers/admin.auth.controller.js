@@ -14,6 +14,7 @@ import {
   generateHashedToken,
 } from "../services/generateRefreshToken.js";
 import { removeCookie, setCookie } from "../services/setCookie.js";
+import { log } from "console";
 
 const adminLogin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -142,4 +143,20 @@ const adminLogout = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, "Logged out successfully"));
 });
 
-export { adminLogin, adminLogout, refresh };
+const getCurrentAdmin = asyncHandler(async (req, res) => {
+  const adminId = req.admin?.id;
+
+  const admin = await Admin.findById({ _id: adminId }).select(
+    "-password -name"
+  );
+
+  if (!admin) {
+    throw new ApiError(404, "Admin not Found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Admin fetched successfully", admin));
+});
+
+export { adminLogin, adminLogout, refresh, getCurrentAdmin };

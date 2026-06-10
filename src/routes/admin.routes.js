@@ -13,6 +13,7 @@ router.post(
   adminAuthController.adminLogin
 );
 router.post("/logout", adminAuthMiddleware, adminAuthController.adminLogout);
+router.get("/me", adminAuthMiddleware, adminAuthController.getCurrentAdmin);
 router.post("/refresh", adminAuthController.refresh);
 
 router.get("/quotes", adminAuthMiddleware, controller.getPendingQuotes);

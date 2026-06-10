@@ -18,9 +18,7 @@ export const adminAuthMiddleware = async (req, res, next) => {
     if (!admin) {
       throw new ApiError(404, "Admin not found");
     }
-
     req.admin = admin;
-
     next();
   } catch (error) {
     throw new ApiError(401, "Invalid or expire token");
