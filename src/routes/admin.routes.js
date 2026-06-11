@@ -16,7 +16,10 @@ router.post("/logout", adminAuthMiddleware, adminAuthController.adminLogout);
 router.get("/me", adminAuthMiddleware, adminAuthController.getCurrentAdmin);
 router.post("/refresh", adminAuthController.refresh);
 
-router.get("/quotes", adminAuthMiddleware, controller.getPendingQuotes);
+router.get("/pending-quotes", adminAuthMiddleware, controller.getPendingQuotes);
+router.get("/dashboard-stats", controller.getDashBoardStats);
+router.get("/all-quotes", controller.getAllQuotes);
+router.get("/users", controller.getAllUsers);
 router.patch(
   "/quotes/:id/approve",
   adminAuthMiddleware,

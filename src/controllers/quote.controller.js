@@ -13,6 +13,7 @@ const getQuotes = asyncHandler(async (req, res) => {
     search = req.query.search,
     sort = req.query.sort,
     tags = req.query.tag,
+    status = "",
     submittedBy = req.query.submittedBy,
   } = req.query;
 
