@@ -14,6 +14,7 @@ import {
   generateHashedToken,
 } from "../services/generateRefreshToken.js";
 import { removeCookie, setCookie } from "../services/setCookie.js";
+import { log } from "console";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -96,14 +97,18 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const refresh = asyncHandler(async (req, res) => {
   const incomingToken = req.cookies.refreshToken;
+  console.log("Cookie Token", incomingToken);
 
   if (!incomingToken) {
     throw new ApiError(401, "No refresh token found");
   }
 
   const hashedIncomingToken = generateHashedToken(incomingToken);
+  console.log("HashedIncoming TOken", hashedIncomingToken);
 
   const session = await userSessionModel.getValidSession(hashedIncomingToken);
+
+  console.log("Session", !!session);
 
   if (!session) {
     throw new ApiError(401, "Invalid refresh token");
@@ -161,8 +166,6 @@ const logoutUser = asyncHandler(async (req, res) => {
   if (!session) {
     throw new ApiError(404, "No session found");
   }
-
-  
 
   removeCookie(res, "accessToken");
   removeCookie(res, "refreshToken");

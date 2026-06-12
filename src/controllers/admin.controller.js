@@ -96,11 +96,12 @@ const getDashBoardStats = asyncHandler(async (req, res) => {
 const getAllQuotes = asyncHandler(async (req, res) => {
   const { status, page = 1, limit = 10 } = req.query;
   const skip = (page - 1) * limit;
+  // console.log(skip);
 
   const filterParams = {};
 
   if (status) {
-    filter.status = status;
+    filterParams.status = status;
   }
 
   const quotes = await Quote.aggregate([
@@ -130,7 +131,10 @@ const getAllQuotes = asyncHandler(async (req, res) => {
       },
     },
     {
-      $unwind: "$submittedBy",
+      $unwind: {
+        path: "$submittedBy",
+        preserveNullAndEmptyArrays: true,
+      },
     },
     {
       $project: {
@@ -147,6 +151,9 @@ const getAllQuotes = asyncHandler(async (req, res) => {
     { $skip: skip },
     { $limit: Number(limit) },
   ]);
+
+  // console.log("After Match:", quotes.length);
+  // console.log("After Match:", quotes);
 
   const total = await Quote.countDocuments(filterParams);
   const totalPages = Math.ceil(total / limit);
@@ -252,6 +259,142 @@ const getAllUsers = asyncHandler(async (req, res) => {
   );
 });
 
+const getMonthlyQuotesStats = asyncHandler(async (req, res) => {
+  // console.log(formattedData);
+
+  const monthlyQuotes = await Quote.aggregate([
+    {
+      $group: {
+        _id: {
+          month: { $month: "$createdAt" },
+          status: "$status",
+        },
+        quotes: {
+          $sum: 1,
+        },
+      },
+    },
+    {
+      $sort: {
+        "_id.month": 1,
+      },
+    },
+
+    {
+      $project: {
+        _id: 0,
+        month: "$_id.month",
+        status: "$_id.status",
+        quotes: 1,
+      },
+    },
+  ]);
+
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const formattedData = months.map((month) => ({
+    month,
+    approved: 0,
+    rejected: 0,
+    "pending-review": 0,
+  }));
+
+  // console.log(formattedData);
+
+  monthlyQuotes.forEach((item) => {
+    // console.log(item);
+
+    const monthIndex = item.month - 1;
+    formattedData[monthIndex][item.status] = item.quotes;
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        "Quotes monthly stats fetched successfully",
+        formattedData
+      )
+    );
+});
+
+const getTopContributers = asyncHandler(async (req, res) => {
+  const topContributer = await Quote.aggregate([
+    // stsge 1 grouping
+    {
+      $group: {
+        _id: "$submittedBy",
+        totalQuotes: {
+          $sum: 1,
+        },
+      },
+    },
+
+    // stage 2 sorting
+    {
+      $sort: {
+        totalQuotes: -1,
+      },
+    },
+
+    // stage 3 limit 5
+
+    {
+      $limit: 5,
+    },
+
+    // stage for looking for user
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+
+    // retrive object unwind
+
+    {
+      $unwind: "$user",
+    },
+
+    {
+      $project: {
+        name: "$user.name",
+        email: "$user.email",
+        userId: "$user._id",
+        _id: 0,
+        totalQuotes: 1,
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        "Top contributers fetched successfully",
+        topContributer
+      )
+    );
+});
+
 export default {
   getPendingQuotes,
   approveQuote,
@@ -260,4 +403,6 @@ export default {
   getDashBoardStats,
   getAllUsers,
   getAllQuotes,
+  getMonthlyQuotesStats,
+  getTopContributers,
 };

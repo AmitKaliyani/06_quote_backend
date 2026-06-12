@@ -39,6 +39,9 @@ export const getValidSession = async (token) => {
     expiresAt: { $gt: new Date() },
     isActive: true,
   });
+
+  console.log(session);
+
   return session;
 };
 

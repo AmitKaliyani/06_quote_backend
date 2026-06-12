@@ -20,6 +20,8 @@ router.get("/pending-quotes", adminAuthMiddleware, controller.getPendingQuotes);
 router.get("/dashboard-stats", controller.getDashBoardStats);
 router.get("/all-quotes", controller.getAllQuotes);
 router.get("/users", controller.getAllUsers);
+router.get("/monthly-quotes-stats", controller.getMonthlyQuotesStats);
+router.get("/top-contributers", controller.getTopContributers);
 router.patch(
   "/quotes/:id/approve",
   adminAuthMiddleware,
