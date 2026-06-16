@@ -4,12 +4,14 @@ import * as adminAuthController from "../controllers/admin.auth.controller.js";
 import { adminAuthMiddleware } from "../middlewares/admin.auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { loginUserSchema } from "../validators/loginAdminSchema.js";
+import { authRateLimit } from "../middlewares/ratelimit.middleware.js";
 
 const router = Router();
 
 router.post(
   "/login",
   validate(loginUserSchema),
+  authRateLimit,
   adminAuthController.adminLogin
 );
 router.post("/logout", adminAuthMiddleware, adminAuthController.adminLogout);
@@ -17,11 +19,23 @@ router.get("/me", adminAuthMiddleware, adminAuthController.getCurrentAdmin);
 router.post("/refresh", adminAuthController.refresh);
 
 router.get("/pending-quotes", adminAuthMiddleware, controller.getPendingQuotes);
-router.get("/dashboard-stats", adminAuthMiddleware, controller.getDashBoardStats);
+router.get(
+  "/dashboard-stats",
+  adminAuthMiddleware,
+  controller.getDashBoardStats
+);
 router.get("/all-quotes", adminAuthMiddleware, controller.getAllQuotes);
 router.get("/users", adminAuthMiddleware, controller.getAllUsers);
-router.get("/monthly-quotes-stats", adminAuthMiddleware, controller.getMonthlyQuotesStats);
-router.get("/top-contributers", adminAuthMiddleware, controller.getTopContributers);
+router.get(
+  "/monthly-quotes-stats",
+  adminAuthMiddleware,
+  controller.getMonthlyQuotesStats
+);
+router.get(
+  "/top-contributers",
+  adminAuthMiddleware,
+  controller.getTopContributers
+);
 router.patch(
   "/quotes/:id/approve",
   adminAuthMiddleware,

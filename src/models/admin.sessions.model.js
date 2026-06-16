@@ -12,6 +12,9 @@ const adminSessionSchema = new Schema(
       required: true,
       unique: true,
     },
+    previousRefreshToken: {
+      type: String,
+    },
     ip: {
       type: String,
     },
@@ -35,7 +38,13 @@ export default AdminSession;
 
 export const getValidSession = async (token) => {
   const session = await AdminSession.findOne({
-    refreshToken: token,
+    $or: [
+      { refreshToken: token },
+      {
+        previousRefreshToken: token,
+        updatedAt: { $gt: new Date(Date.now() - 60 * 1000) }, // 60 seconds grace period
+      },
+    ],
     expiresAt: { $gt: new Date() },
     isActive: true,
   });
@@ -45,11 +54,12 @@ export const getValidSession = async (token) => {
 export const rotateRefreshToken = async (oldToken, newToken) => {
   await AdminSession.findOneAndUpdate(
     {
-      refreshToken: oldToken,
+      $or: [{ refreshToken: oldToken }, { previousRefreshToken: oldToken }],
       isActive: true,
     },
     {
       refreshToken: newToken,
+      previousRefreshToken: oldToken,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
     {

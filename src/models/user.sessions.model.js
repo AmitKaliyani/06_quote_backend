@@ -12,6 +12,9 @@ const userSessionSchema = new Schema(
       required: true,
       unique: true,
     },
+    previousRefreshToken: {
+      type: String,
+    },
     ip: {
       type: String,
     },
@@ -35,7 +38,13 @@ export default UserSession;
 
 export const getValidSession = async (token) => {
   const session = await UserSession.findOne({
-    refreshToken: token,
+    $or: [
+      { refreshToken: token },
+      {
+        previousRefreshToken: token,
+        updatedAt: { $gt: new Date(Date.now() - 60 * 1000) },
+      },
+    ],
     expiresAt: { $gt: new Date() },
     isActive: true,
   });
@@ -48,11 +57,12 @@ export const getValidSession = async (token) => {
 export const rotateRefreshToken = async (oldToken, newToken) => {
   await UserSession.findOneAndUpdate(
     {
-      refreshToken: oldToken,
+      $or: [{ refreshToken: oldToken }, { previousRefreshToken: oldToken }],
       isActive: true,
     },
     {
       refreshToken: newToken,
+      previousRefreshToken: oldToken,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
     {
