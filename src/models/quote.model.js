@@ -200,7 +200,7 @@ export const getQuotes = async ({
     },
   };
 
-  console.log(quotes);
+  // console.log(quotes);
 };
 
 export const getQuoteById = async ({ id, userId, populate }) => {

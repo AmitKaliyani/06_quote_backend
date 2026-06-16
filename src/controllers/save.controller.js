@@ -132,5 +132,5 @@ export const getSavedQuotes = asyncHandler(async (req, res) => {
     )
   );
 
-  console.log(savedQUotes);
+  // console.log(savedQUotes);
 });

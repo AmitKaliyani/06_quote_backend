@@ -97,7 +97,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const refresh = asyncHandler(async (req, res) => {
   const incomingToken = req.cookies.refreshToken;
-  console.log("Cookie Token", incomingToken);
+  // console.log("Cookie Token", incomingToken);
 
   if (!incomingToken) {
     throw new ApiError(401, "No refresh token found");
@@ -108,7 +108,7 @@ const refresh = asyncHandler(async (req, res) => {
 
   const session = await userSessionModel.getValidSession(hashedIncomingToken);
 
-  // console.log("Session", !!session); 
+  // console.log("Session", !!session);
 
   if (!session) {
     throw new ApiError(401, "Invalid refresh token");
