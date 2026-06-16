@@ -2,6 +2,7 @@ import Like from "../models/like.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asynHandler.js";
 import Quote from "../models/quote.model.js";
+import ApiError from "../utils/ApiError.js";
 
 export const toggleLike = asyncHandler(async (req, res) => {
   const quoteId = req.params.id;

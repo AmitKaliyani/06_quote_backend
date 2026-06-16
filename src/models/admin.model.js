@@ -32,7 +32,7 @@ adminSchema.pre("save", async function () {
 adminSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     { id: this._id, email: this.email },
-    env.JWT_SECRET,
+    env.ADMIN_JWT_SECRET,
     { expiresIn: "15m" }
   );
 };

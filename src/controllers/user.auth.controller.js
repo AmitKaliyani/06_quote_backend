@@ -75,14 +75,14 @@ const loginUser = asyncHandler(async (req, res) => {
 
   setCookie({
     res,
-    name: "accessToken",
+    name: "userAccessToken",
     value: accessToken,
     maxAge: 15 * 60 * 1000,
   });
 
   setCookie({
     res,
-    name: "refreshToken",
+    name: "userRefreshToken",
     value: refreshToken,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -96,7 +96,7 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 const refresh = asyncHandler(async (req, res) => {
-  const incomingToken = req.cookies.refreshToken;
+  const incomingToken = req.cookies.userRefreshToken;
   // console.log("Cookie Token", incomingToken);
 
   if (!incomingToken) {
@@ -133,13 +133,13 @@ const refresh = asyncHandler(async (req, res) => {
 
   setCookie({
     res,
-    name: "refreshToken",
+    name: "userRefreshToken",
     value: newRefreshToken,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
   setCookie({
     res,
-    name: "accessToken",
+    name: "userAccessToken",
     value: accessToken,
     maxAge: 15 * 60 * 1000,
   });
@@ -150,16 +150,13 @@ const refresh = asyncHandler(async (req, res) => {
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  const incomingRefreshToken = req.cookies.refreshToken;
+  const incomingRefreshToken = req.cookies.userRefreshToken;
 
   if (!incomingRefreshToken) {
     throw new ApiError(400, "No refreshToken found");
   }
 
-  const hashedIncomingToken = crypto
-    .createHash("sha256")
-    .update(incomingRefreshToken)
-    .digest("hex");
+  const hashedIncomingToken = generateHashedToken(incomingRefreshToken);
 
   const session = await userSessionModel.revokeSession(hashedIncomingToken);
 
@@ -167,8 +164,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "No session found");
   }
 
-  removeCookie(res, "accessToken");
-  removeCookie(res, "refreshToken");
+  removeCookie(res, "userAccessToken");
+  removeCookie(res, "userRefreshToken");
 
   return res.status(200).json(new ApiResponse(200, "Logged out successfully"));
 });

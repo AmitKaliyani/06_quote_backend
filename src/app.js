@@ -6,6 +6,7 @@ import errorHandler from "./middlewares/error.middleware.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { env } from "./config/env.js";
+import { adminAuthMiddleware } from "./middlewares/admin.auth.middleware.js";
 
 const app = express();
 
