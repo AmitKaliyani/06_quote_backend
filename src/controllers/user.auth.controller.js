@@ -104,11 +104,11 @@ const refresh = asyncHandler(async (req, res) => {
   }
 
   const hashedIncomingToken = generateHashedToken(incomingToken);
-  console.log("HashedIncoming TOken", hashedIncomingToken);
+  // console.log("HashedIncoming TOken", hashedIncomingToken);
 
   const session = await userSessionModel.getValidSession(hashedIncomingToken);
 
-  console.log("Session", !!session);
+  // console.log("Session", !!session); 
 
   if (!session) {
     throw new ApiError(401, "Invalid refresh token");

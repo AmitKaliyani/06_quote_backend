@@ -40,7 +40,7 @@ export const getValidSession = async (token) => {
     isActive: true,
   });
 
-  console.log(session);
+  // console.log(session);
 
   return session;
 };
