@@ -9,4 +9,5 @@ export const env = {
   ADMIN_JWT_SECRET: process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
   ALLOW_ORIGIN: process.env.ALLOW_ORIGIN,
+  NODE_ENV: process.env.NODE_ENV,
 };
