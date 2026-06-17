@@ -5,24 +5,22 @@ import jwt from "jsonwebtoken";
 
 export const adminAuthMiddleware = async (req, res, next) => {
   try {
-    const token = req.cookies.accessToken;
+    const token = req.cookies.adminAccessToken;
 
     if (!token) {
-      throw new ApiError(401, "Admin not found");
+      return next(new ApiError(401, "Admin not found"));
     }
 
-    const decoded = jwt.verify(token, env.JWT_SECRET);
+    const decoded = jwt.verify(token, env.ADMIN_JWT_SECRET);
 
     const admin = await Admin.findById(decoded.id).select("-password");
 
     if (!admin) {
-      throw new ApiError(404, "Admin not found");
+      return next(new ApiError(404, "Admin not found"));
     }
-
     req.admin = admin;
-
     next();
   } catch (error) {
-    throw new ApiError(401, "Invalid or expire token");
+    next(new ApiError(401, "Invalid or expire token"));
   }
 };

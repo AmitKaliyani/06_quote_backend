@@ -5,10 +5,10 @@ import jwt from "jsonwebtoken";
 
 export const userAuthMiddleware = async (req, res, next) => {
   try {
-    const token = req.cookies.accessToken;
+    const token = req.cookies.userAccessToken;
 
     if (!token) {
-      throw new ApiError(401, "User not found");
+      return next(new ApiError(401, "User not found"));
     }
 
     const decoded = jwt.verify(token, env.JWT_SECRET);
@@ -16,13 +16,34 @@ export const userAuthMiddleware = async (req, res, next) => {
     const user = await User.findById(decoded.id).select("-password");
 
     if (!user) {
-      throw new ApiError(404, "User not found");
+      return next(new ApiError(404, "User not found"));
     }
 
     req.user = user;
 
+    // console.log(user);
+
     next();
   } catch (error) {
-    throw new ApiError(401, "Invalid or expire token");
+    next(new ApiError(401, "Invalid or expire token"));
+  }
+};
+
+export const userAuthMiddlewareOptional = (req, res, next) => {
+  try {
+    const token = req.cookies.userAccessToken;
+
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    const decoded = jwt.verify(token, env.JWT_SECRET);
+    req.user = decoded;
+
+    next();
+  } catch (err) {
+    req.user = null;
+    next();
   }
 };

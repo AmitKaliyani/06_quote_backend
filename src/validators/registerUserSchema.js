@@ -1,8 +1,7 @@
-import z, { email } from 'zod'
- 
+import z from "zod";
 
 export const registerUserSchema = z.object({
-    email:z.email('Please enter valid email address') ,
-    name:z.string("Please enter name"),
-    password:z.string("Password is required")
-}) 
+  email: z.string().email("Please enter valid email address"),
+  name: z.string().min(1, "Please enter name"),
+  password: z.string().min(1, "Password is required"),
+});
