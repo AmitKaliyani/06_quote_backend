@@ -11,6 +11,7 @@ import { env } from "./config/env.js";
 import { adminAuthMiddleware } from "./middlewares/admin.auth.middleware.js";
 import { requestLogger } from "./middlewares/requestLogger.middleware.js";
 import { metricsMiddleware } from "./middlewares/metrics.middleware.js";
+import helmet from "helmet";
 
 const app = express();
 
@@ -22,6 +23,8 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
