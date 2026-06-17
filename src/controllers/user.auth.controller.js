@@ -15,6 +15,7 @@ import {
 } from "../services/generateRefreshToken.js";
 import { removeCookie, setCookie } from "../services/setCookie.js";
 import { log } from "console";
+import logger from "../config/logger.js";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -44,18 +45,31 @@ const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
+    logger.warn({
+      event: "LOGIN_FAILED",
+      email,
+    });
     throw new ApiError(400, "Invalid credentials");
   }
 
   const user = await userModel.getUser({ email });
 
   if (!user) {
+    logger.warn({
+      event: "LOGIN_FAILED",
+      email,
+    });
     throw new ApiError(404, "User not found");
   }
 
   const isPasswordMatch = await user.comparePassword(password);
 
   if (!isPasswordMatch) {
+    logger.warn({
+      event: "LOGIN_FAILED",
+      email,
+      ip: req.ip,
+    });
     throw new ApiError(400, "Invalid credentials");
   }
 
@@ -85,6 +99,13 @@ const loginUser = asyncHandler(async (req, res) => {
     name: "userRefreshToken",
     value: refreshToken,
     maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  logger.info({
+    event: "USER_LOGIN",
+    userId: user?._id,
+    email: user?.email,
+    sessionId: session?._id,
   });
 
   return res.status(200).json(
@@ -151,6 +172,7 @@ const refresh = asyncHandler(async (req, res) => {
 
 const logoutUser = asyncHandler(async (req, res) => {
   const incomingRefreshToken = req.cookies.userRefreshToken;
+  console.log(req.user);
 
   if (!incomingRefreshToken) {
     throw new ApiError(400, "No refreshToken found");
@@ -166,6 +188,13 @@ const logoutUser = asyncHandler(async (req, res) => {
 
   removeCookie(res, "userAccessToken");
   removeCookie(res, "userRefreshToken");
+
+  logger.info({
+    event: "USER_LOGOUT",
+    userId: req?.user?.id,
+    email: req?.user?.email,
+    sessionId: session?._id,
+  });
 
   return res.status(200).json(new ApiResponse(200, "Logged out successfully"));
 });
