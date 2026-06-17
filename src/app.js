@@ -28,6 +28,13 @@ app.use("/api/quotes", quoteRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/health", healthRouter);
 
+app.use((req, res, next) => {
+  const error = new Error(`Route ${req.originalUrl.split("?")[0]} not found`);
+  error.statusCode = 404;
+
+  next(error);
+});
+
 app.use(errorHandler);
 
 export default app;
