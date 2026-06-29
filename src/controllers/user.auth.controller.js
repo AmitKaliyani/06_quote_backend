@@ -16,6 +16,7 @@ import {
 import { removeCookie, setCookie } from "../services/setCookie.js";
 import { log } from "console";
 import logger from "../config/logger.js";
+import { uploadOnCloudinary } from "../services/cloudinary.js";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -199,11 +200,56 @@ const logoutUser = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, "Logged out successfully"));
 });
 
+const uploadProfile = asyncHandler(async (req, res) => {
+  const filePath = req.file.path;
+
+  const url = await uploadOnCloudinary(filePath);
+
+  if (!url) {
+    throw new ApiError(400, "Image Upload failed");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { avatar: url },
+    { new: true }
+  );
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, "Avatar uploaded successfully", {
+      avatar: user.avatar,
+    })
+  );
+});
+
+const myProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, "Profile fetched successfully", {
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      bio: user.bio,
+    })
+  );
+});
+
 const controller = {
   registerUser,
   loginUser,
   logoutUser,
   refresh,
+  uploadProfile,
+  myProfile,
 };
 
 export default controller;

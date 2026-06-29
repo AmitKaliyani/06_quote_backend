@@ -21,6 +21,12 @@ const userSchema = new Schema(
       type: String,
       required: [true, "password is required"],
     },
+    avatar: {
+      type: String,
+    },
+    bio: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
@@ -44,23 +50,22 @@ const User = mongoose.model("User", userSchema);
 
 export default User;
 
-export const getUser = async ({email,userId}) => {
+export const getUser = async ({ email, userId }) => {
   if (!email && !userId) return null;
-  let filter = {}
+  let filter = {};
 
-  if(email){
-    filter.email = email
+  if (email) {
+    filter.email = email;
   }
-  if(userId){
-     filter['_id'] = userId;
+  if (userId) {
+    filter["_id"] = userId;
   }
   return await User.findOne(filter);
 };
 
-
-export const createUser = async(userData) => {
-  const user =  await User.create(userData)
+export const createUser = async (userData) => {
+  const user = await User.create(userData);
   user.password = undefined;
 
-  return user
-}
+  return user;
+};
