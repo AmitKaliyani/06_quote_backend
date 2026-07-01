@@ -2,8 +2,8 @@ import multer from "multer";
 import path from "path";
 import logger from "../config/logger.js";
 
-console.log(path.join(process.cwd(), "src", "uploads"));
-
+console.log("CWD", process.cwd());
+console.log("Path Join ", path.join(process.cwd(), "src", "uploads"));
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(process.cwd(), "src", "uploads") || "src/uploads/");
@@ -30,8 +30,8 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage,
-  // fileFilter,
-  // limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 export default upload;
