@@ -15,19 +15,26 @@ export const uploadOnCloudinary = async (filePath) => {
       folder: "uploads",
     });
 
-    await fs.unlink(filePath);
-
-    return result.secure_url;
+    return result;
   } catch (error) {
     console.log("Cloudinary Error", error);
-    try {
-      if (filePath) {
-        await fs.unlink(filePath);
-      }
-    } catch (error) {
-      console.log("File delete Error", error);
-    }
-
     return null;
+  } finally {
+    try {
+      await fs.unlink(filePath);
+      console.log("File Deleted from local");
+    } catch (err) {
+      console.log("File delete Error", err.message);
+    }
+  }
+};
+
+export const deleteOnCloudinary = async (publicId) => {
+  if (!publicId) return;
+
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    console.log("Error while deleting file on cloudinary", error);
   }
 };

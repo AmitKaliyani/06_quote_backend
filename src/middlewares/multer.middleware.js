@@ -1,5 +1,6 @@
 import multer from "multer";
 import path from "path";
+import logger from "../config/logger.js";
 
 console.log(path.join(process.cwd(), "src", "uploads"));
 
@@ -14,11 +15,11 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowed = /jpg |jpeg |webp|png/;
+  const allowed = /jpg|jpeg|webp|png/;
 
   const extname = path.extname(file.originalname);
   const mimeType = file.mimetype.split("/")[1];
-  console.log(extname, mimeType);
+  // console.log(extname, mimeType);
 
   if (!allowed.test(extname) || !allowed.test(mimeType)) {
     cb(new Error("Invalid File type ! only Images allowed "));
@@ -29,6 +30,8 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage,
-  fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  // fileFilter,
+  // limits: { fileSize: 5 * 1024 * 1024 },
 });
+
+export default upload;

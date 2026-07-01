@@ -16,7 +16,13 @@ import {
 import { removeCookie, setCookie } from "../services/setCookie.js";
 import { log } from "console";
 import logger from "../config/logger.js";
-import { uploadOnCloudinary } from "../services/cloudinary.js";
+import {
+  deleteOnCloudinary,
+  uploadOnCloudinary,
+} from "../services/cloudinary.js";
+import Quote from "../models/quote.model.js";
+import { sendEmail } from "../services/sendEmail.js";
+import { resetEmailTemplate } from "../services/resetEmailTemplate.js";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -171,6 +177,76 @@ const refresh = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "New accessToken generated"));
 });
 
+//  Forget Password controller
+
+const forgetPassword = asyncHandler(async (req, res) => {
+  const email = req.body?.email;
+
+  if (!email) {
+    throw new ApiError(400, "Email is required");
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new ApiError(
+      404,
+      "No account found with this email / identifier not found"
+    );
+  }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const hashedToken = generateHashedToken(token);
+
+  user.resetPasswordToken = hashedToken;
+  user.resetPasswordTokenExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+  await user.save();
+  const resetLink = `${process.env.CLIENT_URL}/reset-password/${token}`;
+  await sendEmail({
+    to: user.email,
+    subject: "Reset Password",
+    html: resetEmailTemplate(user.name, resetLink),
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, "Reset password email has been sent successfully")
+    );
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { password } = req.body;
+  const { token } = req.params;
+
+  if (!password) {
+    throw new ApiError(400, "Password is required");
+  }
+
+  const hashedIncomingToken = generateHashedToken(token);
+
+  const user = await User.findOne({
+    resetPasswordToken: hashedIncomingToken,
+    resetPasswordTokenExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Invalid or expire token");
+  }
+
+  user.password = password;
+
+  user.resetPasswordToken = undefined;
+  user.resetPasswordTokenExpires = undefined;
+
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Password changed successfully "));
+});
+
 const logoutUser = asyncHandler(async (req, res) => {
   const incomingRefreshToken = req.cookies.userRefreshToken;
   console.log(req.user);
@@ -201,33 +277,40 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const uploadProfile = asyncHandler(async (req, res) => {
-  const filePath = req.file.path;
-
-  const url = await uploadOnCloudinary(filePath);
-
-  if (!url) {
-    throw new ApiError(400, "Image Upload failed");
-  }
-
-  const user = await User.findByIdAndUpdate(
-    req.user.id,
-    { avatar: url },
-    { new: true }
-  );
+  const filePath = req.file?.path;
+  const user = await User.findById(req.user.id);
 
   if (!user) {
     throw new ApiError(404, "User not found");
   }
 
+  if (user.avatar?.publicId) {
+    await deleteOnCloudinary(user.avatar?.publicId);
+  }
+
+  const uploadedImage = await uploadOnCloudinary(filePath);
+  if (!uploadedImage) {
+    throw new ApiError(400, "Image Upload failed");
+  }
+
+  user.avatar = {
+    url: uploadedImage.secure_url,
+    publicId: uploadedImage.public_id,
+  };
+
+  await user.save();
+
   return res.status(200).json(
     new ApiResponse(200, "Avatar uploaded successfully", {
-      avatar: user.avatar,
+      avatar: user.avatar?.url,
     })
   );
 });
 
 const myProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
+
+  const quotesNumber = await Quote.countDocuments({ submittedBy: user._id });
 
   if (!user) {
     throw new ApiError(404, "User not found");
@@ -237,10 +320,54 @@ const myProfile = asyncHandler(async (req, res) => {
     new ApiResponse(200, "Profile fetched successfully", {
       name: user.name,
       email: user.email,
-      avatar: user.avatar,
+      avatar: user.avatar.url,
       bio: user.bio,
+      quotes: quotesNumber,
+      joined: user.createdAt.toLocaleDateString(),
     })
   );
+});
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const { name, bio } = req.body;
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { name, bio },
+    { new: true }
+  );
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, "User details updated successfully", {
+      name,
+      bio,
+    })
+  );
+});
+
+const deleteProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  if (!user.avatar?.publicId) {
+    throw new ApiError(409, "No avatar found");
+  }
+  await deleteOnCloudinary(user.avatar?.publicId);
+
+  user.avatar = {
+    url: "",
+    publicId: "",
+  };
+
+  await user.save();
+
+  res.status(200).json(new ApiResponse(200, "Avatar deleted successfully"));
 });
 
 const controller = {
@@ -250,6 +377,10 @@ const controller = {
   refresh,
   uploadProfile,
   myProfile,
+  updateProfile,
+  forgetPassword,
+  resetPassword,
+  deleteProfile,
 };
 
 export default controller;

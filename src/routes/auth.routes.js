@@ -5,6 +5,7 @@ import { registerUserSchema } from "../validators/registerUserSchema.js";
 import { loginUserSchema } from "../validators/loginUserSchema.js";
 import { authRateLimit } from "../middlewares/ratelimit.middleware.js";
 import { userAuthMiddleware } from "../middlewares/user.auth.middleware.js";
+import upload from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
@@ -19,6 +20,21 @@ router.post("/refresh", controller.refresh);
 router.post("/logout", controller.logoutUser);
 
 router.get("/my-profile", userAuthMiddleware, controller.myProfile);
-router.patch("/upload-avatar", userAuthMiddleware, controller.uploadProfile);
+router.patch(
+  "/avatar",
+  upload.single("avatar"),
+  userAuthMiddleware,
+  controller.uploadProfile
+);
+router.patch("/update-profile", userAuthMiddleware, controller.updateProfile);
+
+router.post("/forgot-password", controller.forgetPassword);
+router.patch(
+  "/reset-password/:token",
+
+  controller.resetPassword
+);
+
+router.delete("/avatar", userAuthMiddleware, controller.deleteProfile);
 
 export default router;

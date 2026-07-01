@@ -22,10 +22,17 @@ const userSchema = new Schema(
       required: [true, "password is required"],
     },
     avatar: {
-      type: String,
+      url: String,
+      publicId: String,
     },
     bio: {
       type: String,
+    },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordTokenExpires: {
+      type: Date,
     },
   },
   { timestamps: true }
