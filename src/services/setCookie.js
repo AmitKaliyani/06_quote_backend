@@ -1,7 +1,8 @@
+import { env } from "../config/env.js";
 const baseOption = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  secure: env.NODE_ENV === "production",
+  sameSite: env.NODE_ENV === "production" ? "none" : "lax",
 };
 export const setCookie = ({ res, name, value, maxAge }) => {
   res.cookie(name, value, { ...baseOption, maxAge });

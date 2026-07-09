@@ -2,8 +2,6 @@ import multer from "multer";
 import path from "path";
 import logger from "../config/logger.js";
 
-console.log("CWD", process.cwd());
-console.log("Path Join ", path.join(process.cwd(), "src", "uploads"));
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(process.cwd(), "src", "uploads") || "src/uploads/");

@@ -42,7 +42,7 @@ export const getValidSession = async (token) => {
       { refreshToken: token },
       {
         previousRefreshToken: token,
-        updatedAt: { $gt: new Date(Date.now() - 60 * 1000) }, // 60 seconds grace period
+        updatedAt: { $gt: new Date(Date.now() - 60 * 1000) },
       },
     ],
     expiresAt: { $gt: new Date() },

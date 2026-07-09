@@ -202,7 +202,7 @@ const forgetPassword = asyncHandler(async (req, res) => {
   user.resetPasswordTokenExpires = new Date(Date.now() + 15 * 60 * 1000);
 
   await user.save();
-  const resetLink = `${process.env.CLIENT_URL}/reset-password/${token}`;
+  const resetLink = `${env.CLIENT_URL}/reset-password/${token}`;
   await sendEmail({
     to: user.email,
     subject: "Reset Password",
